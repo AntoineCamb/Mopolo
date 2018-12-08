@@ -37,12 +37,9 @@ drop type Fournisseur_livrer_aliment_t force;
 /
 drop type Fournisseur_fournir_cidre_t force;
 /
-
-Create or Replace type Crepe_t;
+drop type setCrepes_t force;
 /
 
-Create or Replace type setCrepes_t as table of Crepe_t;
-/
 
 CREATE OR REPLACE TYPE Aliment_t AS OBJECT(
 	idAliment		number(5),
@@ -50,7 +47,6 @@ CREATE OR REPLACE TYPE Aliment_t AS OBJECT(
 	region			varchar2(25),
 	poids			float(2),
 	typeAliment		varchar2(10),
-	STATIC FUNCTION getInfoCreSal (idAliment1 in number) return setCrepes_t,
 	MAP MEMBER FUNCTION compAliment RETURN varchar2,
 	PRAGMA RESTRICT_REFERENCES (compAliment, WNDS, WNPS, RNPS, RNDS)
 );
@@ -72,7 +68,8 @@ CREATE OR REPLACE TYPE Crepe_t AS OBJECT(
 /
 
 CREATE OR REPLACE TYPE Crepe_salee_t UNDER Crepe_t(
-	vegetarienne 	char(1)
+	vegetarienne 	char(1),
+	STATIC FUNCTION getAlimentsSa(idCrepe1 in number) return setAliments_t
 );
 /
 
@@ -238,11 +235,12 @@ CREATE TABLE Crepe_salee of Crepe_salee_t(
 	constraint nl_crepe_salee_vegetarienne vegetarienne not null,
 	constraint chk_crepe_salee_vegetarienne check (vegetarienne in ('Y','N'))
 )
-nested table ListeRefAli store as storeListRefAli;
+nested table ListRefAli store as storeListRefAliSa;
 
 CREATE TABLE Crepe_sucree of Crepe_sucree_t(
 	constraint pk_crepe_sucree_idCrepe primary key(idCrepe)
-);
+)
+nested table ListRefAli store as storeListRefAliSu;
 
 CREATE TABLE Fournisseur of Fournisseur_t(
 	constraint pk_fournisseur_idFournisseur primary key(idFournisseur),
@@ -352,18 +350,36 @@ CREATE OR REPLACE TYPE BODY Crepe_t IS
 END;
 /
 
-CREATE OR REPLACE TYPE BODY Aliment_t IS
-	STATIC FUNCTION getInfoCrep (idAliment1 in number) RETURN setCrepes_t IS
-		setCrep setCrepes_t:=setCrepes_t();
+CREATE OR REPLACE TYPE BODY Crepe_salee_t IS
+	STATIC FUNCTION getAlimentsSa(idCrepe1 in number) RETURN setAliments_t IS
+		setAli setAliments_t:=setAliments_t();
 	BEGIN
-		SELECT CAST(collect(value(cs)) as setCrepes_t) into setCrep
-		FROM Crepe_salee cs WHERE cs.listRefAli.idCrepe = idCrepe1;
-		return setAlim;
+		SELECT cast(collect(value(al)) as setAliments_t) into setAli
+		FROM Crepe_salee cs, table(cs.listRefAli) al
+		WHERE cs.idCrepe = idCrepe1;
+		RETURN setAli;
 		EXCEPTION	
 			WHEN NO_DATA_FOUND THEN
 				raise;
 	END;
 END;
 /
+
+
+/*CREATE OR REPLACE TYPE BODY Aliment_t IS
+	STATIC FUNCTION getInfoCrep (idAliment1 in number) RETURN setCrepes_t IS
+		setCrep setCrepes_t:=setCrepes_t();
+	BEGIN
+		SELECT CAST(collect(value(cs)) as setCrepes_t) into setCrep
+		FROM Crepe_salee cs, table(cs.listRefAli) la WHERE cs.idCrepe = idCrepe1;
+		return setAlim;
+		EXCEPTION	
+			WHEN NO_DATA_FOUND THEN
+				raise;
+	END;
+END;
+/*/
+
+
 
 
