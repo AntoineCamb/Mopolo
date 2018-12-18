@@ -1,60 +1,40 @@
 drop table Crepe_salee cascade constraint;
-			/* Table CREPE_SALEE supprimé(e). */
 drop table Crepe_sucree cascade constraint;
-			/* Table CREPE_SUCREE supprimé(e). */
 drop table Aliment cascade constraint;
-			/* Table ALIMENT supprimé(e). */
 drop table Fournisseur cascade constraint;
-			/* Table FOURNISSEUR supprimé(e). */
 drop table Cidre cascade constraint;
-			/* Table CIDRE supprimé(e). */
 drop table Menu cascade constraint;
-			/* Table MENU supprimé(e). */
 drop table Date_menu cascade constraint;
-			/* Table DATE_MENU supprimé(e). */
 
 drop type Crepe_t force;
 /
-			/* Type CREPE_T supprimé(e). */
 drop type Crepe_salee_t force;
 /
-			/* Type CREPE_SALEE_T supprimé(e). */
 drop type Crepe_sucree_t force;
 /
-			/* Type CREPE_SUCREE_T supprimé(e). */
 drop type Aliment_t force;
 /
-			/* Type ALIMENT_T supprimé(e). */
 drop type Fournisseur_t force;
 /
-			/* Type FOURNISSEUR_T supprimé(e). */
 drop type Cidre_t force;
 /
-			/* Type CIDRE_T supprimé(e). */
 drop type Menu_t force;
 /
-			/* Type MENU_T supprimé(e). */
 drop type Date_menu_t force;
 /
-			/* Type DATE_MENU_T supprimé(e). */
 drop type listRefMenus_t force;
 /
-			/* Type LISTREFMENUS_T supprimé(e). */
 drop type listRefAliments_t force;
 /
-			/* Type LISTREFALIMENTS_T supprimé(e). */
 
 CREATE OR REPLACE TYPE Crepe_salee_t;
 /
-			/* Elément Type CREPE_SALEE_T compilé */
 
 CREATE OR REPLACE TYPE Crepe_sucree_t;
 /
-			/* Elément Type CREPE_SUCREE_T compilé */
 
 CREATE OR REPLACE TYPE Cidre_t;
 /
-			/* Elément Type CIDRE_T compilé */
 
 CREATE OR REPLACE TYPE Menu_t AS OBJECT(
 	idMenu			number(5),
@@ -62,15 +42,15 @@ CREATE OR REPLACE TYPE Menu_t AS OBJECT(
 	refCrepeSal		ref Crepe_salee_t,
 	refCrepeSuc		ref Crepe_sucree_t,
 	refCidre		ref Cidre_t,
+	STATIC FUNCTION getMenu(idMenu1 IN NUMBER) return Menu_t,
 	MAP MEMBER FUNCTION compMenu RETURN varchar2,
 	PRAGMA RESTRICT_REFERENCES (compMenu, WNDS, WNPS, RNPS, RNDS)
 );
 /
-			/* Elément Type MENU_T compilé */
 
 Create or Replace type listRefMenus_t as table of ref Menu_t;
 /
-			/* Elément Type LISTREFMENUS_T compilé */
+
 
 CREATE OR REPLACE TYPE Aliment_t AS OBJECT(
 	idAliment		number(5),
@@ -78,21 +58,18 @@ CREATE OR REPLACE TYPE Aliment_t AS OBJECT(
 	region			varchar2(25),
 	poids			float(2),
 	typeAliment		varchar2(10),
+	STATIC FUNCTION getAliment(idAliment1 IN NUMBER) return Aliment_t,
 	MAP MEMBER FUNCTION compAliment RETURN varchar2,
 	PRAGMA RESTRICT_REFERENCES (compAliment, WNDS, WNPS, RNPS, RNDS)
 );
 /
-			/* Elément Type ALIMENT_T compilé */
 
 Create or Replace type listRefAliments_t as table of ref Aliment_t;
 /
-			/* Elément Type LISTREFALIMENTS_T compilé */
 Create or Replace type setAliments_t as table of Aliment_t;
 /
-			/* Elément Type SETALIMENTS_T compilé */
 Create or Replace type setMenus_t as table of Menu_t;
 /
-			/* Elément Type SETMENUS_T compilé */
 
 CREATE OR REPLACE TYPE Crepe_t AS OBJECT(
 	idCrepe			number(5),
@@ -104,37 +81,36 @@ CREATE OR REPLACE TYPE Crepe_t AS OBJECT(
 	PRAGMA RESTRICT_REFERENCES (compCrepe, WNDS, WNPS, RNPS, RNDS)
 )NOT FINAL;
 /
-			/* Elément Type CREPE_T compilé */
 
 CREATE OR REPLACE TYPE Crepe_salee_t UNDER Crepe_t(
 	vegetarienne 	char(1),
+	STATIC FUNCTION getCrepeSa(idCrepe1 IN NUMBER) return Crepe_salee_t,
 	STATIC FUNCTION getAlimentsSa(idCrepe1 in number) return setAliments_t,
 	STATIC FUNCTION getMenusSa(idCrepe1 in number) return setMenus_t,
 	member procedure addLinkListAliments(RefAlim1 REF Aliment_t),
 	member procedure addLinkListMenus(RefMenu1 REF Menu_t)
 );
 /
-			/* Elément Type CREPE_SALEE_T compilé */
 
 CREATE OR REPLACE TYPE Crepe_sucree_t UNDER Crepe_t(
+	STATIC FUNCTION getCrepeSu(idCrepe1 IN NUMBER) return Crepe_sucree_t,
 	STATIC FUNCTION getAlimentsSu(idCrepe1 in number) return setAliments_t,
 	STATIC FUNCTION getMenusSu(idCrepe1 in number) return setMenus_t,
 	member procedure addLinkListAliments(RefAlim1 REF Aliment_t),
 	member procedure addLinkListMenus(RefMenu1 REF Menu_t)
 );
 /
-			/* Elément Type CREPE_SUCREE_T compilé */
 
 CREATE OR REPLACE TYPE Fournisseur_t AS OBJECT(
 	idFournisseur	number(5),
 	nom				varchar2(25),
 	adresse			varchar2(50),
 	telephone		varchar2(14),
+	STATIC FUNCTION getFournisseur(idFournisseur1 IN NUMBER) return Fournisseur_t,
 	MAP MEMBER FUNCTION compFournisseur RETURN varchar2,
 	PRAGMA RESTRICT_REFERENCES (compFournisseur, WNDS, WNPS, RNPS, RNDS)
 );
 /
-			/* Elément Type FOURNISSEUR_T compilé */
 
 CREATE OR REPLACE TYPE Cidre_t AS OBJECT(
 	idCidre			number(5),
@@ -142,13 +118,13 @@ CREATE OR REPLACE TYPE Cidre_t AS OBJECT(
 	annee			number(4),
 	region			varchar2(25),
 	listRefMenu		listRefMenus_t,
+	STATIC FUNCTION getCidre(idCidre1 IN NUMBER) return Cidre_t,
 	MAP MEMBER FUNCTION compCidre RETURN varchar2,
 	PRAGMA RESTRICT_REFERENCES (compCidre, WNDS, WNPS, RNPS, RNDS),
 	STATIC FUNCTION getMenusCi(idCidre1 in number) return setMenus_t,
 	member procedure addLinkListMenus(RefMenu1 REF Menu_t)
 );
 /
-			/* Elément Type CIDRE_T compilé */
 
 CREATE OR REPLACE TYPE Date_menu_t AS OBJECT(
 	dateJour		date,
@@ -156,7 +132,6 @@ CREATE OR REPLACE TYPE Date_menu_t AS OBJECT(
 	PRAGMA RESTRICT_REFERENCES (compDate, WNDS, WNPS, RNPS, RNDS)
 );
 /
-			/* Elément Type DATE_MENU_T compilé */
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
@@ -167,7 +142,6 @@ CREATE TABLE Aliment of Aliment_t(
     constraint chk_aliment_typeAliment check (typeAliment in ('fruit','légume', 'fromage', 'viande', 'condiment')),
 	constraint uc_aliment UNIQUE (nom)
 );
-			/* Table ALIMENT créé(e). */
 
 CREATE TABLE Crepe_salee of Crepe_salee_t(
 	constraint pk_crepe_salee_idCrepe primary key(idCrepe),
@@ -176,21 +150,18 @@ CREATE TABLE Crepe_salee of Crepe_salee_t(
 )
 nested table ListRefAli store as storeListRefAliSa,
 nested table ListRefMenu store as storeListRefMenuSa;
-			/* Table CREPE_SALEE créé(e). */
 
 CREATE TABLE Crepe_sucree of Crepe_sucree_t(
 	constraint pk_crepe_sucree_idCrepe primary key(idCrepe)
 )
 nested table ListRefAli store as storeListRefAliSu,
 nested table ListRefMenu store as storeListRefMenuSu;
-			/* Table CREPE_SUCREE créé(e). */
 
 CREATE TABLE Fournisseur of Fournisseur_t(
 	constraint pk_fournisseur_idFournisseur primary key(idFournisseur),
 	constraint nl_fournisseur_nom nom not null,
 	constraint nl_fournisseur_telephone telephone not null
 );
-			/* Table FOURNISSEUR créé(e). */
 
 CREATE TABLE Cidre of Cidre_t(
 	constraint pk_cidre_idCidre primary key(idCidre),
@@ -199,18 +170,16 @@ CREATE TABLE Cidre of Cidre_t(
 	constraint nl_cidre_region region not null	
 )
 nested table ListRefMenu store as storeListRefMenuCidre;
-			/* Table CIDRE créé(e). */
 
 CREATE TABLE Menu of Menu_t(
 	constraint pk_menu_idMenu primary key(idMenu),
 	constraint nl_menu_intitule intitule not null
 );
-			/* Table MENU créé(e). */
 
 CREATE TABLE Date_menu of Date_menu_t(
 	constraint pk_date_menu_dateJour primary key(dateJour)
 );
-			/* Table DATE_MENU créé(e). */
+
 
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -226,25 +195,43 @@ insert into Date_menu VALUES('11/07/2015');
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-CREATE OR REPLACE TYPE BODY Aliment_t IS
+CREATE OR REPLACE TYPE BODY Aliment_t AS
 	MAP MEMBER FUNCTION compAliment RETURN varchar2 IS
 	BEGIN
 		RETURN typeAliment||nom||region;
 	END;
+	
+	STATIC FUNCTION getAliment(idAliment1 IN number) return Aliment_t IS
+			alim aliment_t:=null;
+		begin
+			select value(al) into alim from Aliment al where al.idAliment=idAliment1;
+			return alim;
+			EXCEPTION	
+				WHEN NO_DATA_FOUND THEN
+					raise;
+		end;
 END;
 /
-			/* Elément Type Body ALIMENT_T compilé */
 
-CREATE OR REPLACE TYPE BODY Crepe_t IS
+CREATE OR REPLACE TYPE BODY Crepe_t AS
 	MAP MEMBER FUNCTION compCrepe RETURN varchar2 IS
 	BEGIN
 		RETURN intitule;
 	END;
 END;
 /
-			/* Elément Type Body CREPE_T compilé */
 
-CREATE OR REPLACE TYPE BODY Crepe_salee_t IS
+CREATE OR REPLACE TYPE BODY Crepe_salee_t AS
+	STATIC FUNCTION getCrepeSa(idCrepe1 IN number) return Crepe_salee_t IS
+			crepesa crepe_salee_t:=null;
+		begin
+			select value(cs) into crepesa from Crepe_salee cs where cs.idCrepe=idCrepe1;
+			return crepesa;
+			EXCEPTION	
+				WHEN NO_DATA_FOUND THEN
+					raise;
+		end;
+	
 	STATIC FUNCTION getAlimentsSa(idCrepe1 in number) RETURN setAliments_t IS
 		setAli setAliments_t:=null;
 	BEGIN
@@ -290,9 +277,18 @@ CREATE OR REPLACE TYPE BODY Crepe_salee_t IS
 		end;
 END;
 /
-			/* Elément Type Body CREPE_SALEE_T compilé */
 
-CREATE OR REPLACE TYPE BODY Crepe_sucree_t IS
+CREATE OR REPLACE TYPE BODY Crepe_sucree_t AS
+	STATIC FUNCTION getCrepeSu(idCrepe1 IN number) return Crepe_sucree_t IS
+			crepesu crepe_sucree_t:=null;
+		begin
+			select value(cs) into crepesu from Crepe_sucree cs where cs.idCrepe=idCrepe1;
+			return crepesu;
+			EXCEPTION	
+				WHEN NO_DATA_FOUND THEN
+					raise;
+		end;
+	
 	STATIC FUNCTION getAlimentsSu(idCrepe1 in number) RETURN setAliments_t IS
 		setAli setAliments_t:=setAliments_t();
 	BEGIN
@@ -338,18 +334,37 @@ CREATE OR REPLACE TYPE BODY Crepe_sucree_t IS
 		end;
 END;
 /
-			/* Elément Type Body CREPE_SUCREE_T compilé */
 
-CREATE OR REPLACE TYPE BODY Fournisseur_t IS
+CREATE OR REPLACE TYPE BODY Fournisseur_t AS
 	MAP MEMBER FUNCTION compFournisseur RETURN varchar2 IS
 	BEGIN
 		RETURN nom;
 	END;
+	
+	STATIC FUNCTION getFournisseur(idFournisseur1 IN number) return Fournisseur_t IS
+			fourni Fournisseur_t:=null;
+		begin
+			select value(fs) into fourni from Fournisseur fs where fs.idFournisseur=idFournisseur1;
+			return fourni;
+			EXCEPTION	
+				WHEN NO_DATA_FOUND THEN
+					raise;
+		end;
+	
 END;
 /
-			/* Elément Type Body FOURNISSEUR_T compilé */
 
-CREATE OR REPLACE TYPE BODY Cidre_t IS
+CREATE OR REPLACE TYPE BODY Cidre_t AS
+	STATIC FUNCTION getCidre(idCidre1 IN number) return Cidre_t IS
+			cidre Cidre_t:=null;
+		begin
+			select value(cd) into cidre from Cidre cd where cd.idCidre=idCidre1;
+			return cidre;
+			EXCEPTION	
+				WHEN NO_DATA_FOUND THEN
+					raise;
+		end;
+	
 	MAP MEMBER FUNCTION compCidre RETURN varchar2 IS
 	BEGIN
 		RETURN nom||annee;
@@ -378,25 +393,32 @@ CREATE OR REPLACE TYPE BODY Cidre_t IS
 		end;
 END;
 /
-			/* Elément Type Body CIDRE_T compilé */
 
-CREATE OR REPLACE TYPE BODY Menu_t IS
+CREATE OR REPLACE TYPE BODY Menu_t AS
+	STATIC FUNCTION getMenu(idMenu1 IN number) return Menu_t IS
+			men Menu_t:=null;
+		begin
+			select value(me) into men from Menu me where me.idMenu=idMenu1;
+			return men;
+			EXCEPTION	
+				WHEN NO_DATA_FOUND THEN
+					raise;
+		end;
+	
 	MAP MEMBER FUNCTION compMenu RETURN varchar2 IS
 	BEGIN
 		RETURN intitule;
 	END;
 END;
 /
-			/* Elément Type Body MENU_T compilé */
 
-CREATE OR REPLACE TYPE BODY Date_menu_t IS
+CREATE OR REPLACE TYPE BODY Date_menu_t AS
 	MAP MEMBER FUNCTION compDate RETURN date IS
 	BEGIN
 		RETURN dateJour;
 	END;
 END;
 /
-			/* Elément Type Body DATE_MENU_T compilé */
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 declare
@@ -587,7 +609,6 @@ begin
 	values (refMenu3);	
 end;
 /
-			/* Procédure PL/SQL terminée. */
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -625,7 +646,6 @@ begin
 	
 end;
 /
-			/* Procédure PL/SQL terminée. */
 
 -- test des fonctions GET
 set serveroutput on
@@ -633,26 +653,23 @@ declare
 	setMenu setMenus_t;
 begin
 	
-	dbms_output.put_line('Crèpes salées');
+	dbms_output.put_line('Crepe salée');
 	setMenu:=crepe_salee_t.getMenusSa(2);
 	For i IN setMenu.FIRST..setMenu.LAST LOOP
-		dbms_output.put_line('Intitulé = ' || setMenu(i).intitule);
+		dbms_output.put_line('Intitulé =' || setMenu(i).intitule);
 	END LOOP;
-	dbms_output.put_line(' *** ');
 	
-	dbms_output.put_line('Crèpes sucrées');
+	dbms_output.put_line('Crepe sucrée')
 	setMenu:=crepe_sucree_t.getMenusSu(1);
 	For j IN setMenu.FIRST..setMenu.LAST LOOP
-		dbms_output.put_line('Intitulé = ' || setMenu(j).intitule);
+		dbms_output.put_line('Intitulé =' || setMenu(j).intitule);
 	END LOOP;
-	dbms_output.put_line(' *** ');
 	
-	dbms_output.put_line('Cidres');
+	dbms_output.put_line('Cidre')
 	setMenu:=Cidre_t.getMenusCi(1);
 	For k IN setMenu.FIRST..setMenu.LAST LOOP
-		dbms_output.put_line('Intitulé = ' || setMenu(k).intitule);
+		dbms_output.put_line('Intitulé =' || setMenu(k).intitule);
 	END LOOP;
-	dbms_output.put_line(' *** ');
 	
 	EXCEPTION 
 		WHEN NO_DATA_FOUND then
@@ -663,19 +680,6 @@ begin
 	
 end;
 /
-			/* Crèpes salées
-			Intitulé = Le petit basque
-			 *** 
-			Crèpes sucrées
-			Intitulé = Le gourmand
-			 *** 
-			Cidres
-			Intitulé = Le gourmand
-			 *** 
-
-
-			Procédure PL/SQL terminée. */
-
 
 
 
