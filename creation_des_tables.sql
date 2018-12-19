@@ -43,7 +43,21 @@ drop type listRefMenus_t force;
 drop type listRefAliments_t force;
 /
 			/* Type LISTREFALIMENTS_T supprimé(e). */
+drop type listRefDates_t force;
+/
+			/* Type LISTREFDATES_T supprimé(e). */
+drop type dates_t force;
+/
 
+CREATE TYPE date_menu_t;
+/
+			/* Elément Type DATE_MENU_T compilé */
+CREATE TYPE listRefDates_t AS TABLE OF REF date_menu_t;
+/
+			/* Elément Type LISTREFDATES_T compilé */
+Create type dates_t As table of date;
+/
+			
 CREATE OR REPLACE TYPE Crepe_salee_t;
 /
 			/* Elément Type CREPE_SALEE_T compilé */
@@ -66,16 +80,32 @@ CREATE OR REPLACE TYPE Menu_t AS OBJECT(
 	refCrepeSal		ref Crepe_salee_t,
 	refCrepeSuc		ref Crepe_sucree_t,
 	refCidre		ref Cidre_t,
+	listRefDates    listRefDates_t,
 	STATIC FUNCTION getMenu(idMenu1 IN NUMBER) return Menu_t,
+	STATIC FUNCTION getDates(idMenu1 in number) return dates_t,
 	MAP MEMBER FUNCTION compMenu RETURN varchar2,
 	PRAGMA RESTRICT_REFERENCES (compMenu, WNDS, WNPS, RNPS, RNDS)
 );
 /
 			/* Elément Type MENU_T compilé */
-			
 Create or Replace type listRefMenus_t as table of ref Menu_t;
 /
 			/* Elément Type LISTREFMENUS_T compilé */
+Create or Replace type setMenus_t as table of Menu_t;
+/
+			/* Elément Type SETMENUS_T compilé */
+
+CREATE OR REPLACE TYPE Date_menu_t AS OBJECT(
+	dateJour		date,
+	STATIC FUNCTION getMenus(dateJour1 in date) return setMenus_t,
+	MAP MEMBER FUNCTION compDate RETURN date,
+	PRAGMA RESTRICT_REFERENCES (compDate, WNDS, WNPS, RNPS, RNDS)
+);
+/
+			/* Elément Type DATE_MENU_T compilé */		
+Create or Replace type setDates_t as table of Date_menu_t;
+/
+			/* Elément Type SETDATES_T compilé */
 
 CREATE OR REPLACE TYPE Aliment_t AS OBJECT(
 	idAliment		number(5),
@@ -97,9 +127,6 @@ Create or Replace type listRefAliments_t as table of ref Aliment_t;
 Create or Replace type setAliments_t as table of Aliment_t;
 /
 			/* Elément Type SETALIMENTS_T compilé */
-Create or Replace type setMenus_t as table of Menu_t;
-/
-			/* Elément Type SETMENUS_T compilé */
 			
 CREATE OR REPLACE TYPE Crepe_t AS OBJECT(
 	idCrepe			number(5),
@@ -124,7 +151,6 @@ CREATE OR REPLACE TYPE Crepe_salee_t UNDER Crepe_t(
 	member procedure addLinkListMenus(RefMenu1 REF Menu_t),
 	member procedure deleteLinkListMenu(RefMenu1 REF Menu_t),
 	member procedure updateLinkListMenu(RefMenu1 REF Menu_t, RefMenu2 REF Menu_t)
-
 );
 /
 			/* Elément Type CREPE_SALEE_T compilé */
@@ -167,14 +193,6 @@ CREATE OR REPLACE TYPE Cidre_t AS OBJECT(
 );
 /
 			/* Elément Type CIDRE_T compilé */
-
-CREATE OR REPLACE TYPE Date_menu_t AS OBJECT(
-	dateJour		date,
-	MAP MEMBER FUNCTION compDate RETURN date,
-	PRAGMA RESTRICT_REFERENCES (compDate, WNDS, WNPS, RNPS, RNDS)
-);
-/
-			/* Elément Type DATE_MENU_T compilé */
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
@@ -223,7 +241,8 @@ nested table ListRefMenu store as storeListRefMenuCidre;
 CREATE TABLE Menu of Menu_t(
 	constraint pk_menu_idMenu primary key(idMenu),
 	constraint nl_menu_intitule intitule not null
-);
+)
+nested table listRefDates store as storeListRefDatesMenu;
 			/* Table MENU créé(e). */
 
 CREATE TABLE Date_menu of Date_menu_t(
@@ -235,9 +254,12 @@ CREATE TABLE Date_menu of Date_menu_t(
 
 Alter table storeListRefAliSa
 	ADD (SCOPE FOR (column_value) IS Aliment);
+			/* Table STORELISTREFALISA modifié(e). */
 
 Alter table storeListRefMenuSa
 	ADD (SCOPE FOR(column_value) IS Menu);
+			/* Table STORELISTREFMENUSA modifié(e). */
+	
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 CREATE OR REPLACE TYPE BODY Aliment_t AS
@@ -442,12 +464,11 @@ CREATE OR REPLACE TYPE BODY Fournisseur_t AS
 					raise;
 			null;
 		end;
-		
+
 	MAP MEMBER FUNCTION compFournisseur RETURN varchar2 IS
 	BEGIN
 		RETURN nom;
-	END;
-		
+	END;	
 END;
 /
 			/* Elément Type Body FOURNISSEUR_T compilé */
@@ -504,19 +525,42 @@ CREATE OR REPLACE TYPE BODY Menu_t AS
 					raise;
 		end;
 	
+	STATIC FUNCTION getDates(idMenu1 in number) RETURN dates_t IS
+			dat dates_t := dates_t();
+		BEGIN
+			SELECT cast(collect(d.column_value.dateJour) as dates_t) into dat
+			FROM TABLE(SELECT m.listRefDates FROM menu m WHERE m.idMenu = idMenu1) d;
+			RETURN dat;
+			EXCEPTION	
+				WHEN NO_DATA_FOUND THEN
+					raise;
+		END;
+	
 	MAP MEMBER FUNCTION compMenu RETURN varchar2 IS
-	BEGIN
-		RETURN intitule;
-	END;
+		BEGIN
+			RETURN intitule;
+		END;
 END;
 /
 			/* Elément Type Body MENU_T compilé */
 
 CREATE OR REPLACE TYPE BODY Date_menu_t AS
 	MAP MEMBER FUNCTION compDate RETURN date IS
-	BEGIN
-		RETURN dateJour;
-	END;
+		BEGIN
+			RETURN dateJour;
+		END;
+	
+	STATIC FUNCTION getMenus(dateJour1 in date) return setMenus_t IS 
+			setMen setMenus_t := setMenus_t();
+		BEGIN
+			SELECT cast(collect(value(m)) as setMenus_t) into setMen
+			FROM menu m, table(m.listRefDates) d
+			WHERE d.column_value.dateJour = dateJour1;
+			RETURN setMen;
+			EXCEPTION	
+				WHEN NO_DATA_FOUND THEN
+					raise;
+		END;
 END;
 /
 			/* Elément Type Body DATE_MENU_T compilé */
@@ -563,6 +607,10 @@ declare
 	refMenu1 REF Menu_t;
 	refMenu2 REF Menu_t;
 	refMenu3 REF Menu_t;
+	
+	refDat1 REF Date_menu_t;
+	refDat2 REF Date_menu_t;
+	refDat3 REF Date_menu_t;
 begin
 	-- insertion des crêpes salées
 	insert into Crepe_salee cs VALUES(crepe_salee_t(1, 'La Fromagère', EMPTY_CLOB(), listRefAliments_t(), listRefMenus_t(),'Y'))
@@ -637,14 +685,23 @@ begin
 	returning ref(c) into refCidre2;
 	insert into Cidre c VALUES(Cidre_t(3, 'Cidre breton', 2015, 'Bretagne', listRefMenus_t()))
 	returning ref(c) into refCidre3;
-			
+
+	-- insertion des dates
+	insert into Date_menu d Values(Date_menu_t('18/03/2014'))
+	returning ref(d) into refDat1;
+	insert into Date_menu d Values(Date_menu_t('04/11/2017'))
+	returning ref(d) into refDat2;
+	insert into Date_menu d Values(Date_menu_t('11/07/2015'))
+	returning ref(d) into refDat3;
+	
 	-- insertion des menus
-	insert into Menu me VALUES(Menu_t(1, 'Le gourmand', refCrepSa1, refCrepSu1, refCidre1))
+	insert into Menu me VALUES(Menu_t(1, 'Le gourmand', refCrepSa1, refCrepSu1, refCidre1, listRefDates_t()))
 	returning ref(me) into refMenu1;
-	insert into Menu me VALUES(Menu_t(2, 'Le petit basque', refCrepSa2, refCrepSu2, refCidre2))
+	insert into Menu me VALUES(Menu_t(2, 'Le petit basque', refCrepSa2, refCrepSu2, refCidre2, listRefDates_t()))
 	returning ref(me) into refMenu2;
-	insert into Menu me VALUES(Menu_t(3, 'Le voyageur', refCrepSa3, refCrepSu3, refCidre3))
+	insert into Menu me VALUES(Menu_t(3, 'Le voyageur', refCrepSa3, refCrepSu3, refCidre3, listRefDates_t()))
 	returning ref(me) into refMenu3;
+	
 		
 	-- mise à jour de la liste des références vers les aliments de chaque crêpes salées
 	insert into 
@@ -788,6 +845,28 @@ begin
 	table(Select fs.listRefAli from Fournisseur fs where fs.idFournisseur=4)
 	values (refAlim19);
 	
+	-- mise à jour de la liste des références vers les dates de chaque menu
+	insert into
+	table (Select m.listRefDates from Menu m where m.idMenu = 1)
+	values (refDat1);
+	insert into
+	table (Select m.listRefDates from Menu m where m.idMenu = 1)
+	values (refDat3);
+	
+	insert into
+	table (Select m.listRefDates from Menu m where m.idMenu = 2)
+	values (refDat1);
+	insert into
+	table (Select m.listRefDates from Menu m where m.idMenu = 2)
+	values (refDat2);
+	insert into
+	table (Select m.listRefDates from Menu m where m.idMenu = 2)
+	values (refDat3);
+	
+	insert into
+	table (Select m.listRefDates from Menu m where m.idMenu = 3)
+	values (refDat2);
+		
 end;
 /
 			/* Procédure PL/SQL terminée. */
@@ -798,8 +877,8 @@ end;
 declare 
 	crepesalee crepe_salee_t;
 	crepesucree crepe_sucree_t;
-	alimSu aliment_t := aliment_t(21, 'Pommes', 'Pyrenees-Orientales', 20, 'fruit',null);
-	alimSa aliment_t := aliment_t(20, 'Poivron rouge', 'Landes', 25, 'légume',null);
+	alimSu aliment_t := aliment_t(21, 'Pommes', 'Pyrenees-Orientales', 20, 'fruit', null);
+	alimSa aliment_t := aliment_t(20, 'Poivron rouge', 'Landes', 25, 'légume', null);
 	
 	refAlim REF Aliment_t;
 	refCrepeSa REF Crepe_salee_t;
@@ -812,7 +891,6 @@ begin
 	values (alimSa) returning ref(al) into refAlim;
 	
 	crepesalee.addLinkListAliments(refAlim);
-	
 	
 	select ref(cs), value(cs) into refCrepeSu, crepesucree
 	from crepe_sucree cs where cs.idCrepe = 1;	
@@ -846,16 +924,7 @@ begin
 			dbms_output.put_line('sqlcode= '||sqlcode);
 			dbms_output.put_line('sqlerrm= '||sqlerrm);
 end;
-
-
-
-
-
-
-
-
-
-
+/
 
 -- test des fonctions GET
 set serveroutput on
@@ -867,6 +936,7 @@ declare
 	cid cidre_t;
 	men menu_t;
 	setMenu setMenus_t;
+	dat dates_t;
 	setAlim setAliments_t;
 begin
 	dbms_output.put_line('Aliment 3');
@@ -930,11 +1000,26 @@ begin
 	END LOOP;
 	DBMS_OUTPUT.NEW_LINE; 
 	
-	dbms_output.put_line('test fonction getAlimentsFournis');
-	setAlim:=Fournisseur_t.getAlimentsFournis(3);
-	For m IN setAlim.FIRST..setAlim.LAST LOOP
-		dbms_output.put_line('Nom aliment = ' || setAlim(m).nom);
+	dbms_output.put_line('Menus 1 > Dates');
+	dat := Menu_t.getDates(1);
+	For l IN dat.FIRST..dat.LAST LOOP
+		dbms_output.put_line('Date = ' || dat(l));
 	END LOOP;
+	DBMS_OUTPUT.NEW_LINE; 
+	
+	dbms_output.put_line('Date 11/07/2015 > Menus');
+	setMenu := Date_menu_t.getMenus('11/07/2015');
+	For m IN setMenu.FIRST..setMenu.LAST LOOP
+		dbms_output.put_line('Intitulé = ' || setMenu(m).intitule);
+	END LOOP;
+	DBMS_OUTPUT.NEW_LINE; 
+	
+	dbms_output.put_line('Fournisseur 3 > Aliments');
+	setAlim:=Fournisseur_t.getAlimentsFournis(3);
+	For n IN setAlim.FIRST..setAlim.LAST LOOP
+		dbms_output.put_line('Nom aliment = ' || setAlim(n).nom);
+	END LOOP;
+	DBMS_OUTPUT.NEW_LINE;
 	
 	EXCEPTION 
 		WHEN NO_DATA_FOUND then
@@ -981,13 +1066,6 @@ end;
 
 			Cidre 1 > Menus
 			Intitulé = Le gourmand
-			
-			test fonction getAlimentsFournis
-			Nom aliment = Tomates
-			Nom aliment = Poires
-			Nom aliment = Salade
-			Nom aliment = Oignons
-
 
 
 
